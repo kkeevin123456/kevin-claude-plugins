@@ -1,0 +1,18 @@
+{
+  "$schema": "https://www.schemastore.org/claude-code-marketplace.json",
+  "name": "kevin-claude-plugins",
+  "owner": {
+    "name": "kkeevin123456",
+    "url": "https://github.com/kkeevin123456"
+  },
+  "description": "Kevin's personal Claude Code plugins.",
+  "plugins": [
+    {
+      "name": "feature-flow",
+      "displayName": "Feature Flow",
+      "description": "Opinionated feature-development pipeline: brainstorm -> size-branch (wayfinder / grill-with-docs) -> plan -> parallel subagents -> review + verify.",
+      "source": "./plugins/feature-flow",
+      "category": "workflow"
+    }
+  ]
+}

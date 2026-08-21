@@ -1,0 +1,23 @@
+{
+  "name": "feature-flow",
+  "version": "0.1.0",
+  "description": "Opinionated feature-development pipeline for Claude Code: brainstorm -> size-branch (wayfinder / grill-with-docs) -> writing-plans -> parallel subagents -> code review + verification.",
+  "author": {
+    "name": "kkeevin123456",
+    "url": "https://github.com/kkeevin123456"
+  },
+  "homepage": "https://github.com/kkeevin123456/kevin-claude-plugins",
+  "repository": "https://github.com/kkeevin123456/kevin-claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "feature-development",
+    "brainstorming",
+    "planning",
+    "subagents",
+    "code-review"
+  ],
+  "commands": [
+    "./commands/feature-flow.md"
+  ]
+}
