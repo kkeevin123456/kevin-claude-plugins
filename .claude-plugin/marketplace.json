@@ -13,6 +13,13 @@
       "description": "Opinionated feature-development pipeline: brainstorm -> size-branch (wayfinder / grill-with-docs) -> plan -> parallel subagents -> review + verify.",
       "source": "./plugins/feature-flow",
       "category": "workflow"
+    },
+    {
+      "name": "spec-style-d",
+      "displayName": "Spec — Style D",
+      "description": "Feature specs as one canonical fact set rendered twice — a narrative human doc and a contract-first AI doc — with hand-authored, branded flowcharts carrying the branch logic.",
+      "source": "./plugins/spec-style-d",
+      "category": "documentation"
     }
   ]
 }

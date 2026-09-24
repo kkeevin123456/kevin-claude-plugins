@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TITLE &middot; Flowchart</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:        #F2F5F7;
+      --color-paper-2:      #E6ECF1;
+      --color-ink:          #414B55;
+      --color-muted:        #5F6B76;
+      --color-soft:         #94A0AB;
+      --color-rule:         rgba(65,75,85,0.12);
+      --color-accent:       #057FEB;
+      --color-accent-tint:  rgba(5,127,235,0.08);
+      --color-link:         #005CAD;
+      --font-sans:  'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', serif;
+      --font-mono:  'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono); font-size: 0.68rem; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--color-muted); margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.2vw + 0.75rem, 1.75rem);
+      font-weight: 400; letter-spacing: -0.01em; line-height: 1.2;
+      color: var(--color-ink); margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Flowchart &middot; FEATURE</p>
+    <h1>TITLE &mdash; state the question the diagram answers</h1>
+
+    <svg viewBox="0 0 1200 1000" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dg-title dg-desc">
+      <title id="dg-title">TITLE</title>
+      <desc id="dg-desc">A full prose walkthrough of the graph: every node, every branch and
+        the condition on it, in reading order. This is the accessibility text and the only part
+        a text-only reader receives — write it as sentences, not as a node list.</desc>
+
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#5F6B76"/>
+        </marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#057FEB"/>
+        </marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#005CAD"/>
+        </marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#F2F5F7"/>
+
+      <!-- ============ ARROWS (before nodes, so nodes cover the lines) ============ -->
+      <!-- straight -->
+      <line x1="420" y1="104" x2="420" y2="164" stroke="#5F6B76" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- orthogonal: 8px rounded corners, final straight run sets the arrowhead direction -->
+      <path d="M564,240 L712,240 Q720,240 720,248 L720,448" fill="none" stroke="#5F6B76" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- focal path: accent, slightly heavier -->
+      <line x1="420" y1="312" x2="420" y2="448" stroke="#057FEB" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+
+      <!-- ============ ARROW LABELS (paper-filled rect under the text) ============ -->
+      <rect x="436" y="370" width="52" height="12" rx="2" fill="#F2F5F7"/>
+      <text x="462" y="379" fill="#057FEB" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CONDITION</text>
+
+      <!-- ============ NODES ============ -->
+      <!-- trigger: pill, grey fill (paper rect underneath so the tint reads the same everywhere) -->
+      <rect x="300" y="40" width="240" height="64" rx="32" fill="#F2F5F7"/>
+      <rect x="300" y="40" width="240" height="64" rx="32" fill="rgba(95,107,118,0.10)" stroke="#94A0AB" stroke-width="1"/>
+      <text x="420" y="70" fill="#414B55" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Trigger</text>
+      <text x="420" y="86" fill="#5F6B76" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">qualifier</text>
+
+      <!-- decision: diamond -->
+      <polygon points="420,164 564,240 420,312 276,240" fill="#ffffff" stroke="#414B55" stroke-width="1"/>
+      <text x="420" y="236" fill="#414B55" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Decision?</text>
+      <text x="420" y="252" fill="#5F6B76" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">what it keys on</text>
+
+      <!-- focal node: accent tint + accent stroke. At most two of these per diagram. -->
+      <rect x="280" y="448" width="280" height="112" rx="8" fill="#F2F5F7"/>
+      <rect x="280" y="448" width="280" height="112" rx="8" fill="rgba(5,127,235,0.08)" stroke="#057FEB" stroke-width="1.2"/>
+      <text x="420" y="484" fill="#414B55" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Focal outcome</text>
+      <text x="420" y="506" fill="#005CAD" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">the thing worth noticing</text>
+      <text x="420" y="524" fill="#5F6B76" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">supporting detail</text>
+      <text x="420" y="542" fill="#94A0AB" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">caveat or condition</text>
+
+      <!-- plain node -->
+      <rect x="590" y="448" width="260" height="112" rx="6" fill="#F2F5F7"/>
+      <rect x="590" y="448" width="260" height="112" rx="6" fill="#ffffff" stroke="#414B55" stroke-width="1"/>
+      <text x="720" y="484" fill="#414B55" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Outcome</text>
+      <text x="720" y="506" fill="#5F6B76" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">detail</text>
+
+      <!-- ============ LEGEND ============ -->
+      <line x1="40" y1="884" x2="1160" y2="884" stroke="rgba(65,75,85,0.12)" stroke-width="0.8"/>
+      <text x="40" y="908" fill="#5F6B76" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <rect x="40" y="928" width="24" height="14" rx="7" fill="rgba(95,107,118,0.10)" stroke="#94A0AB" stroke-width="1"/>
+      <text x="76" y="939" fill="#5F6B76" font-size="8.5" font-family="'Geist', sans-serif">Trigger</text>
+
+      <polygon points="214,928 228,942 214,956 200,942" fill="#ffffff" stroke="#414B55" stroke-width="1"/>
+      <text x="244" y="939" fill="#5F6B76" font-size="8.5" font-family="'Geist', sans-serif">Decision</text>
+
+      <rect x="360" y="928" width="24" height="14" rx="4" fill="#ffffff" stroke="#414B55" stroke-width="1"/>
+      <text x="396" y="939" fill="#5F6B76" font-size="8.5" font-family="'Geist', sans-serif">Outcome</text>
+
+      <rect x="520" y="928" width="24" height="14" rx="4" fill="rgba(5,127,235,0.08)" stroke="#057FEB" stroke-width="1.2"/>
+      <text x="556" y="939" fill="#5F6B76" font-size="8.5" font-family="'Geist', sans-serif">Name what the focal fill means here</text>
+    </svg>
+  </div>
+</body>
+</html>

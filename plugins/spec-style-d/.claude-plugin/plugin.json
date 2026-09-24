@@ -1,0 +1,10 @@
+{
+  "name": "spec-style-d",
+  "description": "Feature specs as one canonical fact set rendered twice — a narrative human doc and a contract-first AI doc — with branded flowcharts carrying the branch logic.",
+  "version": "1.0.0",
+  "author": {
+    "name": "kkeevin123456",
+    "url": "https://github.com/kkeevin123456"
+  },
+  "license": "MIT"
+}

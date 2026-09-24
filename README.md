@@ -22,6 +22,25 @@ disciplined funnel from idea to reviewed, verified code:
 `feature-flow` is a thin **orchestrator**: it drives real skills rather than
 reimplementing them.
 
+### `spec-style-d`
+
+A house style for feature specs. One canonical **fact set** (`F1…FN`, plus a "what if" Q&A
+table) is the source of truth; two style files render exactly those facts for different readers:
+
+| File | Reader | Shape |
+|---|---|---|
+| `fact-set.md` | reviewers | numbered facts, one per ID |
+| `<feature>.human.zh.md` | a person catching up | narrative, motivation-first, embeds rendered PNGs |
+| `<feature>.ai.en.md` | an agent about to implement | contract-first, Mermaid, flat edge-case list |
+
+Diagrams are hand-authored inline SVG (≤9 nodes, 1–2 focal, orthogonal connectors) rendered to
+PNG with Playwright — the plugin ships the template, the palette, and the renderer.
+
+The skill loads itself when you write, regenerate, or sync a spec. It enforces the parts that
+rot first: facts derived from the code rather than from the previous spec, a fact-coverage
+checklist in both style files, deferrals in `TODO.md` rather than in spec prose, and looking at
+the rendered diagram before committing it.
+
 ## Requirements
 
 `feature-flow` delegates to skills from two other plugins, so install these first:
@@ -31,11 +50,15 @@ reimplementing them.
 
 Both are available from the official Claude Code plugins marketplace.
 
+`spec-style-d` has no plugin dependencies. Rendering diagrams needs Python with
+[Playwright](https://playwright.dev/python/) and Chromium (`playwright install chromium`).
+
 ## Install
 
 ```
 /plugin marketplace add kkeevin123456/kevin-claude-plugins
 /plugin install feature-flow@kevin-claude-plugins
+/plugin install spec-style-d@kevin-claude-plugins
 ```
 
 ## Usage
