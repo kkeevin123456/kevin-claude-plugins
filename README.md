@@ -41,6 +41,22 @@ rot first: facts derived from the code rather than from the previous spec, a fac
 checklist in both style files, deferrals in `TODO.md` rather than in spec prose, and looking at
 the rendered diagram before committing it.
 
+### `herdr-handoff`
+
+In-place session handoff for Claude Code running inside a herdr pane.
+When a session's context is full, `/handoff-recap [what next]`:
+
+1. writes a handoff doc to `/tmp/handoff-<topic>-<time>.md` (state, open items, suggested skills);
+2. starts a small detached driver that waits for the session to go idle, sends `/clear`,
+   then sends "Read the handoff doc … and continue the work it describes."
+
+Same pane, same tab position, fresh context. The driver logs to `/tmp/herdr-handoff-recap.log`
+and gives up after ~10 minutes of not seeing the agent go idle.
+
+It also ships a `UserPromptSubmit` hook that, on the first prompt of each session, asks the model
+to rename the herdr tab after the real topic, and to read a handoff/plan file first when the
+prompt only points at one. Outside herdr (`$HERDR_TAB_ID` unset) the hook does nothing.
+
 ## Requirements
 
 `feature-flow` delegates to skills from two other plugins, so install these first:
@@ -49,6 +65,10 @@ the rendered diagram before committing it.
 - **`mattpocock-skills`**
 
 Both are available from the official Claude Code plugins marketplace.
+
+`herdr-handoff` needs `herdr` on `PATH` (or at `~/.local/bin/herdr`), plus `jq`, `python3`
+and `setsid`. In auto mode you may need an allow rule for the `setsid nohup …herdr-handoff-recap`
+launch.
 
 `spec-style-d` has no plugin dependencies. Rendering diagrams needs Python with
 [Playwright](https://playwright.dev/python/) and Chromium (`playwright install chromium`).
@@ -59,6 +79,7 @@ Both are available from the official Claude Code plugins marketplace.
 /plugin marketplace add kkeevin123456/kevin-claude-plugins
 /plugin install feature-flow@kevin-claude-plugins
 /plugin install spec-style-d@kevin-claude-plugins
+/plugin install herdr-handoff@kevin-claude-plugins
 ```
 
 ## Usage

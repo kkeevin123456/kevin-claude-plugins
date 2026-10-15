@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Wait for the Claude Code session in a herdr pane to go idle, then /clear it
+# and start a fresh session that recaps the given handoff file.
+# usage: herdr-handoff-recap <handoff.md> [pane_id]
+set -u
+H="$(command -v herdr 2>/dev/null || echo "$HOME/.local/bin/herdr")"
+md=${1:?usage: herdr-handoff-recap <handoff.md> [pane_id]}
+pane=${2:-${HERDR_PANE_ID:?not inside a herdr pane}}
+log=/tmp/herdr-handoff-recap.log
+[ -f "$md" ] || { echo "$(date +%T) missing $md" >>"$log"; exit 1; }
+
+status() { "$H" pane get "$pane" 2>/dev/null | python3 -c 'import json,sys;print(json.load(sys.stdin)["result"]["pane"].get("agent_status",""))' 2>/dev/null; }
+
+# Wait until the agent is no longer busy for 2 consecutive checks (max ~10 min).
+wait_idle() {
+  local ok=0 i
+  for i in $(seq 1 600); do
+    case "$(status)" in idle|done) ok=$((ok+1)); [ $ok -ge 2 ] && return 0 ;; *) ok=0 ;; esac
+    sleep 1
+  done
+  return 1
+}
+
+{
+  echo "$(date +%T) start pane=$pane md=$md"
+  sleep 2
+  wait_idle || { echo "timeout waiting for idle before /clear"; exit 1; }
+  "$H" pane send-text "$pane" "/clear" >/dev/null
+  sleep 0.5
+  "$H" pane send-keys "$pane" Enter >/dev/null
+  sleep 3
+  wait_idle || { echo "timeout waiting for idle after /clear"; exit 1; }
+  "$H" pane send-text "$pane" "Read the handoff doc $md and continue the work it describes." >/dev/null
+  sleep 0.5
+  "$H" pane send-keys "$pane" Enter >/dev/null
+  echo "$(date +%T) done"
+} >>"$log" 2>&1

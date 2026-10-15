@@ -1,0 +1,13 @@
+{
+  "name": "herdr-handoff",
+  "version": "0.1.0",
+  "description": "In-place session handoff for Claude Code running inside herdr: write a handoff doc, /clear the pane, and resume from the doc automatically. Also auto-titles herdr tabs after the real topic.",
+  "author": {
+    "name": "kkeevin123456",
+    "url": "https://github.com/kkeevin123456"
+  },
+  "homepage": "https://github.com/kkeevin123456/kevin-claude-plugins",
+  "repository": "https://github.com/kkeevin123456/kevin-claude-plugins",
+  "license": "MIT",
+  "keywords": ["herdr", "handoff", "context", "session", "tmux"]
+}

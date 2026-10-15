@@ -20,6 +20,13 @@
       "description": "Feature specs as one canonical fact set rendered twice — a narrative human doc and a contract-first AI doc — with hand-authored, branded flowcharts carrying the branch logic.",
       "source": "./plugins/spec-style-d",
       "category": "documentation"
+    },
+    {
+      "name": "herdr-handoff",
+      "displayName": "herdr Handoff",
+      "description": "/handoff-recap writes a handoff doc, then /clears the herdr pane and resumes a fresh session from it in place. Plus a hook that titles herdr tabs after the real topic.",
+      "source": "./plugins/herdr-handoff",
+      "category": "workflow"
     }
   ]
 }
