@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>服務延遲分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* ===== ENGINE — do not edit (styles) =====
+   Layout: text column left, full-bleed stage right, chapter rail at the bottom.
+   Tokens drive every colour, including the 3D scene; dark mode redefines them. */
+:root {
+  --bg: #EEF2F5; --panel: #FFFFFF; --stage: #E3E9EE; --ink: #18222D; --muted: #56636F; --soft: #8D99A5;
+  --line: #C9D2DA; --accent: #057FEB; --accent-tint: #DCEBFB;
+  --pass: #1C8A5E; --fail: #C93C3C; --warn: #B07A00; --pass-tint: #DDF2E8; --fail-tint: #F8E1E1; --warn-tint: #F7EBCD;
+  --font-display: "Noto Serif TC", "Songti TC", "PMingLiU", serif;
+  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D131A; --panel: #16202A; --stage: #111921; --ink: #E6ECF1; --muted: #A3B0BC; --soft: #6E7C89;
+    --line: #2A3743; --accent: #3D9BFF; --accent-tint: #13314F; --pass: #3FBF8A; --fail: #F06A6A; --warn: #E2AE3A;
+    --pass-tint: #133528; --fail-tint: #3A1C1E; --warn-tint: #3A2F12; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D131A; --panel: #16202A; --stage: #111921; --ink: #E6ECF1; --muted: #A3B0BC; --soft: #6E7C89;
+  --line: #2A3743; --accent: #3D9BFF; --accent-tint: #13314F; --pass: #3FBF8A; --fail: #F06A6A; --warn: #E2AE3A;
+  --pass-tint: #133528; --fail-tint: #3A1C1E; --warn-tint: #3A2F12; color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.deck { height: 100%; display: grid; grid-template-columns: minmax(340px, 420px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+.text { grid-row: 1; grid-column: 1; overflow-y: auto; overflow-wrap: anywhere; padding: 32px 28px 24px 32px; border-right: 1px solid var(--line); min-width: 0; }
+.stage { grid-row: 1; grid-column: 2; position: relative; background: var(--stage); overflow: hidden; min-width: 0; }
+.rail { grid-row: 2; grid-column: 1 / -1; border-top: 1px solid var(--line); background: var(--panel); display: flex; align-items: center; gap: 12px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); flex-wrap: wrap; }
+
+.slide-text { display: flex; flex-direction: column; gap: 18px; transition: opacity .35s ease, transform .35s ease; }
+.slide-text.leaving { opacity: 0; transform: translateY(6px); }
+.eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+.eyebrow b { color: var(--accent); font-weight: 600; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 2.3vw, 31px); line-height: 1.35; margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 36em; }
+.block { display: flex; flex-direction: column; gap: 10px; }
+.block h2 { margin: 0; font-size: 11px; font-family: var(--font-mono); letter-spacing: .16em; color: var(--soft); font-weight: 600; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+.block h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; transition: background .2s, border-color .2s, color .2s; }
+.chip:hover { border-color: var(--accent); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+.hint b { color: var(--ink); font-weight: 500; }
+.data { font-size: 13.5px; overflow-x: auto; }
+.data table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.data th, .data td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.data th { font-weight: 500; color: var(--muted); font-size: 12px; }
+.data td.num { font-family: var(--font-mono); white-space: nowrap; }
+.data ul, .data ol { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; }
+.data code, .mono { font-family: var(--font-mono); font-size: 12.5px; }
+.data .src { font-size: 12px; color: var(--soft); margin-top: 8px; }
+.tag { display: inline-block; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .08em; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); }
+.tag.pass { color: var(--pass); border-color: var(--pass); }
+.tag.fail { color: var(--fail); border-color: var(--fail); }
+.tag.warn { color: var(--warn); border-color: var(--warn); }
+.illus { font-family: var(--font-mono); font-size: 10.5px; color: var(--warn); border: 1px dashed var(--warn); border-radius: 4px; padding: 0 5px; margin-left: 6px; white-space: nowrap; }
+
+#gl { position: absolute; inset: 0; width: 100%; height: 100%; transition: opacity .6s ease; display: block; }
+.stage.flat #gl { opacity: .08; }
+.stage.no3d #gl { display: none; }
+.layer { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 28px; opacity: 0; pointer-events: none; visibility: hidden; transition: opacity .45s ease, transform .6s cubic-bezier(.2,.7,.2,1), visibility 0s .45s; transform: scale(.97); }
+.layer.active { opacity: 1; pointer-events: auto; visibility: visible; transform: none; transition: opacity .45s ease, transform .6s cubic-bezier(.2,.7,.2,1), visibility 0s; }
+.layer svg { width: 100%; height: 100%; max-height: 100%; overflow: visible; }
+.caption { position: absolute; left: 16px; bottom: 12px; right: 16px; font-size: 12px; color: var(--muted); font-family: var(--font-mono); letter-spacing: .02em; pointer-events: none; }
+.hud { position: absolute; top: 16px; right: 16px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+.hud:empty { display: none; }
+
+svg text { fill: var(--ink); font-family: var(--font-body); }
+svg .t { font-size: 14px; font-weight: 700; }
+svg .s { font-size: 11.5px; fill: var(--muted); }
+svg .mono { font-family: var(--font-mono); font-size: 11.5px; }
+svg .lbl { font-family: var(--font-mono); font-size: 11px; fill: var(--muted); }
+svg .band { fill: var(--panel); stroke: var(--line); }
+svg .node { fill: var(--panel); stroke: var(--line); stroke-width: 1.5; transition: fill .3s, stroke .3s, opacity .3s; }
+svg .pill { fill: var(--stage); stroke: var(--soft); stroke-width: 1.5; }
+svg .edge { fill: none; stroke: var(--soft); stroke-width: 1.6; transition: stroke .3s, stroke-width .3s, opacity .3s; }
+svg .edge.dash { stroke-dasharray: 5 4; }
+svg .lblbg { fill: var(--stage); }
+svg [data-s] { transition: opacity .3s; }
+svg .off { opacity: .28; }
+svg .on .node, svg .node.on { stroke: var(--accent); fill: var(--accent-tint); }
+svg .edge.on { stroke: var(--accent); stroke-width: 2.6; }
+svg .on.pass .node { stroke: var(--pass); fill: var(--pass-tint); }
+svg .on.fail .node { stroke: var(--fail); fill: var(--fail-tint); }
+svg .on.warn .node { stroke: var(--warn); fill: var(--warn-tint); }
+svg .band.on { stroke: var(--accent); stroke-width: 2; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; width: 100%; max-width: 860px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 6px; transition: opacity .3s, border-color .3s, transform .3s; min-width: 0; overflow-wrap: anywhere; }
+.card .k { font-family: var(--font-mono); font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.card .v { font-size: 14px; font-weight: 500; }
+.card .w { font-size: 12.5px; color: var(--muted); }
+.card.dim { opacity: .25; }
+.card.hit { border-color: var(--accent); transform: translateY(-2px); }
+
+.nav-btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 13px; }
+.nav-btn:hover { border-color: var(--accent); }
+.nav-btn:disabled { opacity: .4; cursor: default; }
+.chapters { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; min-width: 0; }
+.chapter { border: 0; background: none; padding: 4px 10px 6px; cursor: pointer; font-size: 13px; color: var(--muted); border-bottom: 2px solid transparent; }
+.chapter[aria-current="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 500; }
+.dots { display: flex; gap: 4px; }
+.dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+.dots i.cur { background: var(--accent); }
+.count { font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 820px) {
+  html, body { height: auto; }
+  .deck { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 58vh auto; }
+  .text { grid-row: 1; grid-column: 1; border-right: 0; border-bottom: 1px solid var(--line); padding: 20px 16px; overflow: visible; }
+  .stage { grid-row: 2; grid-column: 1; }
+  .rail { grid-row: 3; gap: 8px; }
+  .layer { padding: 12px 12px 44px; overflow: auto; align-items: flex-start; justify-content: flex-start; }
+  .layer svg { min-width: 640px; height: auto; max-height: none; flex: none; }
+  .cards { grid-template-columns: minmax(0, 1fr); }
+  .caption { background: var(--stage); bottom: 0; left: 0; right: 0; padding: 6px 16px 10px; }
+  .chapters { order: 3; flex-basis: 100%; overflow-x: auto; flex-wrap: nowrap; }
+  .chapter { white-space: nowrap; }
+  .dots { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide-text, .layer, #gl, .card, svg .edge, svg .node, svg [data-s] { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+  <aside class="text" aria-live="polite"><div class="slide-text" id="slideText"></div></aside>
+
+  <section class="stage" id="stage">
+    <canvas id="gl" aria-hidden="true"></canvas>
+    <div class="hud" id="hud"></div>
+
+<!-- DECK:LAYERS:BEGIN -->
+    <!-- One <div class="layer" data-slide="<slide id>"> per svg/html slide. three slides need no layer. -->
+
+    <!-- slide: flow -->
+    <div class="layer" data-slide="flow">
+      <svg viewBox="0 0 900 540" role="img" aria-labelledby="t-flow">
+        <title id="t-flow">請求流程：閘道把請求送到搜尋服務；逾時後重試一次，第二次仍失敗才回錯誤</title>
+        <defs><marker id="ah-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker></defs>
+        <path class="edge" data-s="ok retryok retryfail" d="M140 122 H178" marker-end="url(#ah-flow)"/>
+        <path class="edge" data-s="ok retryok retryfail" d="M340 122 H378" marker-end="url(#ah-flow)"/>
+        <path class="edge" data-s="ok" d="M550 122 H618" marker-end="url(#ah-flow)"/>
+        <path class="edge" data-s="retryok retryfail" d="M465 152 V248" marker-end="url(#ah-flow)"/>
+        <path class="edge" data-s="retryok retryfail" d="M550 280 H618" marker-end="url(#ah-flow)"/>
+        <path class="edge" data-s="retryok retryfail" d="M745 250 V154" marker-end="url(#ah-flow)"/>
+        <rect class="lblbg" x="472" y="192" width="64" height="16"/><text x="476" y="204" class="lbl">2 s 逾時</text>
+        <g data-s="ok retryok retryfail"><rect class="pill" x="20" y="100" width="120" height="44" rx="22"/><text x="80" y="127" text-anchor="middle" class="t">用戶端</text></g>
+        <g data-s="ok retryok retryfail"><rect class="node" x="180" y="92" width="160" height="60" rx="10"/><text x="194" y="117" class="t">閘道</text><text x="194" y="138" class="s">驗證、轉送</text></g>
+        <g data-s="ok retryok retryfail"><rect class="node" x="380" y="92" width="170" height="60" rx="10"/><text x="394" y="117" class="t">搜尋服務</text><text x="394" y="138" class="s mono">timeout 2 s</text></g>
+        <g data-s="ok retryok retryfail" id="flowRes"><rect class="node" x="620" y="92" width="250" height="60" rx="10"/><text x="634" y="117" class="t" id="flowResT"></text><text x="634" y="138" class="s" id="flowResS"></text></g>
+        <g data-s="retryok retryfail" class="fail"><rect class="node" x="380" y="250" width="170" height="60" rx="10"/><text x="394" y="275" class="t">第一次逾時</text><text x="394" y="296" class="s">不回錯誤給用戶端</text></g>
+        <g data-s="retryok retryfail" class="warn"><rect class="node" x="620" y="250" width="250" height="60" rx="10"/><text x="634" y="275" class="t">重試一次</text><text x="634" y="296" class="s">只重試讀取類請求</text></g>
+        <text x="20" y="400" class="s">重試只做一次：避免後端已經過載時，重試把流量放大。</text>
+        <text x="20" y="422" class="s">寫入類請求不重試，因為重送可能造成重複寫入。</text>
+      </svg>
+    </div>
+
+    <!-- slide: scope -->
+    <div class="layer" data-slide="scope">
+      <div class="cards" id="scopeCards"></div>
+    </div>
+<!-- DECK:LAYERS:END -->
+
+    <div class="caption" id="caption"></div>
+  </section>
+
+  <nav class="rail" id="rail">
+    <button class="nav-btn" id="prevBtn"></button>
+    <div class="chapters" id="chapters"></div>
+    <div class="dots" id="dots" aria-hidden="true"></div>
+    <span class="count" id="count"></span>
+    <button class="nav-btn" id="nextBtn"></button>
+    <button class="nav-btn" id="themeBtn"></button>
+  </nav>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ===== DECK:BEGIN =====
+// Everything between DECK:BEGIN and DECK:END is the deck's content. The engine below reads
+// LANG, SLIDES and (optionally) buildScene. Data in this demo is invented and marked 示意.
+const LANG = 'zh-TW';
+
+const SERVICES = [
+  { id: 'search', name: '搜尋', ms: 420 },
+  { id: 'cart', name: '購物車', ms: 180 },
+  { id: 'auth', name: '登入', ms: 150 },
+];
+const ILLUS = '<span class="illus">示意</span>';
+const demo = { bars: [] };
+
+// Called once after Three.js loads. Builds every 3D object the deck uses.
+function buildScene(stage) {
+  const { THREE, scene } = stage;
+  SERVICES.forEach((s, i) => {
+    const h = s.ms / 60;
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(2.4, h, 2.4), new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.05 }));
+    bar.position.set((i - 1) * 3.6, h / 2, 0);
+    scene.add(bar);
+    demo.bars.push(bar);
+    const lb = stage.label(s.name, `${s.ms} ms`);
+    lb.position.set(bar.position.x, h + 0.9, 0);
+    scene.add(lb);
+  });
+}
+
+const SLIDES = [
+  {
+    id: 'latency', chapter: '現況', mode: 'three',
+    title: '三個服務中，搜尋服務的回應時間最長，是其他兩個的兩倍以上',
+    lede: '量的是尖峰時段的 p95 回應時間。搜尋服務是唯一超過 300 ms 目標的服務。',
+    caption: '舞台：柱高＝p95 回應時間',
+    hint: '點服務 → <b>鏡頭移到那根柱子</b>，右上角顯示數值',
+    scenarios: [{ id: 'all', label: '全部' }].concat(SERVICES.map((s) => ({ id: s.id, label: s.name }))),
+    data: (sc) => tbl(SERVICES.map((s) => [sc === s.id ? `<b>${s.name}</b>` : s.name, `${s.ms} ms`, ILLUS]), ['服務', 'p95', '']) +
+      '<p class="src">數值為示意，用來展示樣板。</p>',
+    hud: (sc) => {
+      const s = SERVICES.find((x) => x.id === sc);
+      return s ? `${s.name} · ${s.ms} ms` : '3 個服務 · p95';
+    },
+    three: (sc, stage) => {
+      const i = SERVICES.findIndex((s) => s.id === sc);
+      const V = stage.THREE.Vector3;
+      if (i < 0) {
+        stage.focus(demo.bars);
+        stage.flyTo(new V(0, 9, stage.narrow ? 22 : 16), new V(0, 2.8, 0));
+        return;
+      }
+      const b = demo.bars[i], h = SERVICES[i].ms / 60;
+      stage.focus(demo.bars, new Set([b]));
+      stage.flyTo(new V(b.position.x * 0.5, h + 4, stage.narrow ? 18 : 12), new V(b.position.x, h * 0.5, 0));
+    },
+  },
+  {
+    id: 'flow', chapter: '機制', mode: 'svg',
+    title: '逾時的請求會重試一次，第二次仍失敗才回錯誤',
+    lede: '用戶端看到的錯誤，只剩重試後仍逾時的那一部分。',
+    caption: '舞台：一個讀取請求在三種情況下走的路徑',
+    hint: '切換情況 → <b>走過的路徑變藍</b>，右上的結果跟著變',
+    scenarios: [{ id: 'ok', label: '一次成功' }, { id: 'retryok', label: '重試後成功' }, { id: 'retryfail', label: '重試仍失敗' }],
+    svgFocus: { ok: [0, 40, 900, 300], retryok: [0, 40, 900, 420], retryfail: [0, 40, 900, 420] },
+    data: (sc) => ({
+      ok: tbl([['路徑', '閘道 → 搜尋 → 回應'], ['用戶端看到', '200']]),
+      retryok: tbl([['路徑', '逾時 → 重試 → 回應'], ['用戶端看到', '200，多等約 2 s']]),
+      retryfail: tbl([['路徑', '逾時 → 重試 → 再逾時'], ['用戶端看到', '504']]),
+    }[sc]),
+    onScenario: (sc) => {
+      const r = { ok: ['200 · 回傳結果', '一次成功', 'pass'], retryok: ['200 · 回傳結果', '第二次成功', 'pass'], retryfail: ['504 · 回錯誤', '兩次都逾時', 'fail'] }[sc];
+      $('#flowResT').textContent = r[0];
+      $('#flowResS').textContent = r[1];
+      $('#flowRes').setAttribute('class', 'on ' + r[2]);
+    },
+  },
+  {
+    id: 'scope', chapter: '範圍', mode: 'html',
+    title: '改動只碰三個地方，每個地方都有對應的測試',
+    lede: '閘道的重試設定、搜尋服務的逾時值、監控的告警門檻。',
+    caption: '舞台：每張卡片是一個改動點',
+    hint: '這頁只有一個情境',
+    scenarios: [{ id: 'all', label: '全部' }],
+    data: () => tbl([['改動點', 3], ['新增測試', 7]]) + `<p class="src">數量為示意。${ILLUS}</p>`,
+    onScenario: () => {
+      $('#scopeCards').innerHTML = [
+        ['gateway/retry', '閘道重試設定', '讀取類請求重試 1 次'],
+        ['search/timeout', '搜尋逾時值', '從 5 s 改成 2 s'],
+        ['alerts/latency', '延遲告警', 'p95 > 300 ms 持續 5 分鐘'],
+      ].map(([k, v, w]) => `<div class="card"><div class="k"><span>${k}</span><span class="tag pass">有測試</span></div><div class="v">${v}</div><div class="w">${w}</div></div>`).join('');
+    },
+  },
+];
+// ===== DECK:END =====
+</script>
+<script>
+// ===== ENGINE — do not edit =====
+// Reads LANG, SLIDES, buildScene from the DECK region. Exposes window.deck and the stage API.
+(function () {
+  'use strict';
+  const I18N = {
+    'zh-TW': { prev: '← 上一頁', next: '下一頁 →', theme: '主題：', themes: { system: '系統', light: '淺色', dark: '深色' }, interact: '互動', data: '資料', stage: '舞台', nav: '章節導覽' },
+    en: { prev: '← Prev', next: 'Next →', theme: 'Theme: ', themes: { system: 'System', light: 'Light', dark: 'Dark' }, interact: 'Interact', data: 'Data', stage: 'Stage', nav: 'Chapters' },
+  };
+  const lang = typeof LANG === 'string' ? LANG : 'en';
+  const T = I18N[lang] || I18N.en;
+  document.documentElement.lang = lang === 'zh-TW' ? 'zh-Hant' : lang;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = (s, r = document) => r.querySelector(s);
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  window.$ = $;
+  window.tbl = (rows, head) => `<table>${head ? `<tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr>` : ''}${rows.map((r) => `<tr>${r.map((c) => `<td${typeof c === 'number' || /^[\d.,]+ ?(s|ms|min|%|MB|GB)?$/.test(c) ? ' class="num"' : ''}>${c}</td>`).join('')}</tr>`).join('')}</table>`;
+
+  const stageEl = $('#stage');
+  const canvas = $('#gl');
+  stageEl.setAttribute('aria-label', T.stage);
+  $('#rail').setAttribute('aria-label', T.nav);
+  $('#prevBtn').textContent = T.prev;
+  $('#nextBtn').textContent = T.next;
+
+  // ---------- 3D stage ----------
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const has3D = !!window.THREE && typeof buildScene === 'function' && SLIDES.some((s) => s.mode === 'three');
+  let renderer, grid, tween = null, center, radius = 20;
+  const cam = {};
+  const sprites = [], themeCbs = [];
+
+  function makeLabel(text, sub) {
+    const c = document.createElement('canvas');
+    c.width = 512; c.height = 160;
+    const g = c.getContext('2d');
+    g.font = `700 54px ${css('--font-body')}`;
+    g.fillStyle = css('--ink');
+    g.textAlign = 'center';
+    g.fillText(text, 256, 70);
+    if (sub) { g.font = `500 40px ${css('--font-mono')}`; g.fillStyle = css('--muted'); g.fillText(sub, 256, 130); }
+    const tex = new THREE.CanvasTexture(c);
+    tex.anisotropy = 4;
+    return tex;
+  }
+
+  function flyTo(pos, look) {
+    tween = { fp: cam.pos.clone(), fl: cam.look.clone(), tp: pos.clone(), tl: look.clone(), t0: performance.now(), dur: reduce ? 0 : 1100 };
+  }
+
+  const stage = {
+    THREE: window.THREE, scene: null, camera: null,
+    get narrow() { return stageEl.clientWidth < 560; },
+    color: (token) => new THREE.Color(css(token)),
+    label(text, sub) {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeLabel(text, sub), transparent: true, depthWrite: false, depthTest: false }));
+      sp.renderOrder = 10;
+      sp.scale.set(3.2, 1.0, 1);
+      sp.userData.label = { text, sub };
+      sprites.push(sp);
+      return sp;
+    },
+    flyTo,
+    focus(objs, hit) {
+      const base = stage.color('--accent-tint'), acc = stage.color('--accent'), soft = stage.color('--soft');
+      objs.forEach((m) => { m.material.color = !hit || !hit.size ? base : hit.has(m) ? acc : soft.clone().lerp(base, 0.6); });
+    },
+    onTheme(fn) { themeCbs.push(fn); },
+  };
+  window.stage = stage;
+
+  function paint3D() {
+    if (!stage.scene) return;
+    if (grid) stage.scene.remove(grid);
+    const size = Math.ceil(radius * 3 / 10) * 10;
+    grid = new THREE.GridHelper(size, size / 2, stage.color('--line'), stage.color('--line'));
+    grid.position.set(center.x, 0, center.z);
+    stage.scene.add(grid);
+    sprites.forEach((sp) => {
+      const { text, sub } = sp.userData.label;
+      sp.material.map.dispose();
+      sp.material.map = makeLabel(text, sub);
+      sp.material.needsUpdate = true;
+    });
+    themeCbs.forEach((fn) => fn());
+  }
+
+  function resize() {
+    const w = stageEl.clientWidth, h = stageEl.clientHeight;
+    renderer.setSize(w, h, false);
+    stage.camera.aspect = w / Math.max(h, 1);
+    stage.camera.updateProjectionMatrix();
+  }
+
+  function loop(now) {
+    if (tween) {
+      const k = tween.dur ? Math.min(1, (now - tween.t0) / tween.dur) : 1, e = ease(k);
+      cam.pos.lerpVectors(tween.fp, tween.tp, e);
+      cam.look.lerpVectors(tween.fl, tween.tl, e);
+      if (k >= 1) tween = null;
+    }
+    stage.camera.position.copy(cam.pos);
+    stage.camera.lookAt(cam.look);
+    renderer.render(stage.scene, stage.camera);
+    requestAnimationFrame(loop);
+  }
+
+  // Background camera for svg/html slides: a slow orbit around the scene, one angle per slide.
+  function drift(n) {
+    const a = n * 0.7;
+    flyTo(new THREE.Vector3(center.x + Math.cos(a) * radius * 3, radius * 1.6, center.z + Math.sin(a) * radius * 3), center);
+  }
+
+  function initThree() {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    stage.scene = new THREE.Scene();
+    stage.camera = new THREE.PerspectiveCamera(40, 1, 0.1, 500);
+    stage.scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+    const dl = new THREE.DirectionalLight(0xffffff, 0.75);
+    dl.position.set(6, 14, 10);
+    stage.scene.add(dl);
+    buildScene(stage);
+    const box = new THREE.Box3().setFromObject(stage.scene);
+    center = box.isEmpty() ? new THREE.Vector3() : box.getCenter(new THREE.Vector3());
+    center.y = 0;
+    radius = box.isEmpty() ? 10 : Math.max(8, box.getSize(new THREE.Vector3()).length() / 2);
+    cam.pos = new THREE.Vector3(center.x, radius, center.z + radius * 1.6);
+    cam.look = center.clone();
+    paint3D();
+    resize();
+    new ResizeObserver(resize).observe(stageEl);
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- svg viewBox tween ----------
+  function tweenViewBox(svg, to) {
+    const v = svg.viewBox.baseVal, f = [v.x, v.y, v.width, v.height];
+    const dur = reduce ? 0 : 700, t0 = performance.now();
+    function step(now) {
+      const k = dur ? Math.min(1, (now - t0) / dur) : 1, e = ease(k);
+      svg.setAttribute('viewBox', f.map((x, i) => (x + (to[i] - x) * e).toFixed(1)).join(' '));
+      if (k < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  document.querySelectorAll('.layer svg').forEach((svg) => { svg.dataset.vb0 = svg.getAttribute('viewBox'); });
+
+  // ---------- deck state ----------
+  let cur = -1;
+  const scen = {};
+  SLIDES.forEach((s) => { scen[s.id] = s.scenarios[0].id; });
+  const chaptersEl = $('#chapters'), dotsEl = $('#dots');
+  [...new Set(SLIDES.map((s) => s.chapter))].forEach((ch) => {
+    const b = document.createElement('button');
+    b.className = 'chapter';
+    b.textContent = ch;
+    b.addEventListener('click', () => go(SLIDES.findIndex((s) => s.chapter === ch)));
+    chaptersEl.appendChild(b);
+  });
+  SLIDES.forEach(() => dotsEl.appendChild(document.createElement('i')));
+
+  function renderText(s) {
+    const n = SLIDES.indexOf(s), sc = scen[s.id];
+    return `
+      <div class="eyebrow"><b>${String(n + 1).padStart(2, '0')}</b><span>${s.chapter}</span><span>${n + 1} / ${SLIDES.length}</span></div>
+      <h1>${s.title}</h1>
+      <p class="lede">${s.lede}</p>
+      <div class="block"><h2>${T.interact}</h2>
+        <div class="btns" role="group">${s.scenarios.map((x) => `<button class="chip" data-scn="${x.id}" aria-pressed="${x.id === sc}">${x.label}</button>`).join('')}</div>
+        <p class="hint">${s.hint || ''}</p></div>
+      <div class="block"><h2>${T.data}</h2><div class="data" id="dataBox">${s.data(sc)}</div></div>`;
+  }
+
+  function applyScenario(s) {
+    const sc = scen[s.id];
+    const box = $('#dataBox');
+    if (box) box.innerHTML = s.data(sc);
+    document.querySelectorAll('#slideText .chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.scn === sc)));
+    const layer = document.querySelector(`.layer[data-slide="${s.id}"]`);
+    if (layer) {
+      layer.querySelectorAll('[data-s]').forEach((el) => {
+        const on = el.dataset.s.split(/\s+/).includes(sc);
+        el.classList.toggle('on', on);
+        el.classList.toggle('off', !on);
+      });
+    }
+    if (s.onScenario) s.onScenario(sc, layer);
+    if (s.svgFocus && layer) {
+      const svg = layer.querySelector('svg');
+      tweenViewBox(svg, s.svgFocus[sc] || svg.dataset.vb0.split(/\s+/).map(Number));
+    }
+    $('#hud').textContent = s.hud ? s.hud(sc) : '';
+    if (stage.scene) {
+      if (s.mode === 'three' && s.three) s.three(sc, stage);
+      else if (s.mode !== 'three') drift(SLIDES.indexOf(s));
+    }
+  }
+
+  function go(n) {
+    if (typeof n === 'string') n = SLIDES.findIndex((s) => s.id === n);
+    n = Math.max(0, Math.min(SLIDES.length - 1, n | 0));
+    const s = SLIDES[n], txt = $('#slideText');
+    const changed = n !== cur;
+    cur = n;
+    const paint = () => {
+      txt.innerHTML = renderText(s);
+      txt.querySelectorAll('.chip').forEach((b) => b.addEventListener('click', () => setScenario(b.dataset.scn)));
+      txt.classList.remove('leaving');
+      applyScenario(s);
+    };
+    document.querySelectorAll('.layer').forEach((l) => l.classList.toggle('active', l.dataset.slide === s.id));
+    stageEl.classList.toggle('flat', s.mode !== 'three' || !stage.scene);
+    sprites.forEach((sp) => { sp.visible = s.mode === 'three'; });
+    if (s.svgFocus) {
+      const svg = document.querySelector(`.layer[data-slide="${s.id}"] svg`);
+      const [x, y, w, h] = svg.dataset.vb0.split(/\s+/).map(Number);
+      svg.setAttribute('viewBox', `${x - w * 0.06} ${y - h * 0.06} ${w * 1.12} ${h * 1.12}`);
+    }
+    if (changed && !reduce && txt.innerHTML) { txt.classList.add('leaving'); setTimeout(paint, 220); } else paint();
+    $('#caption').textContent = s.caption || '';
+    $('#count').textContent = `${n + 1} / ${SLIDES.length}`;
+    chaptersEl.querySelectorAll('.chapter').forEach((b) => b.setAttribute('aria-current', String(b.textContent === s.chapter)));
+    dotsEl.querySelectorAll('i').forEach((d, i) => d.classList.toggle('cur', i === n));
+    $('#prevBtn').disabled = n === 0;
+    $('#nextBtn').disabled = n === SLIDES.length - 1;
+    try { history.replaceState(null, '', '#s' + (n + 1)); } catch (e) { /* sandboxed frame */ }
+    return s.id;
+  }
+
+  function setScenario(id) {
+    const s = SLIDES[cur];
+    if (!s.scenarios.some((x) => x.id === id)) return false;
+    scen[s.id] = id;
+    applyScenario(s);
+    return true;
+  }
+
+  // ---------- theme ----------
+  const THEMES = ['system', 'light', 'dark'];
+  let themeIdx = 0;
+  function setTheme(t) {
+    themeIdx = Math.max(0, THEMES.indexOf(t));
+    if (THEMES[themeIdx] === 'system') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', THEMES[themeIdx]);
+    $('#themeBtn').textContent = T.theme + T.themes[THEMES[themeIdx]];
+    paint3D();
+    if (cur >= 0) applyScenario(SLIDES[cur]);
+    return THEMES[themeIdx];
+  }
+  $('#themeBtn').addEventListener('click', () => setTheme(THEMES[(themeIdx + 1) % 3]));
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { paint3D(); if (cur >= 0) applyScenario(SLIDES[cur]); });
+
+  // ---------- input ----------
+  $('#prevBtn').addEventListener('click', () => go(cur - 1));
+  $('#nextBtn').addEventListener('click', () => go(cur + 1));
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (['ArrowRight', 'PageDown'].includes(e.key)) { go(cur + 1); e.preventDefault(); }
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { go(cur - 1); e.preventDefault(); }
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(SLIDES.length - 1);
+    else if (/^[1-9]$/.test(e.key)) go(+e.key - 1);
+  });
+  let sx = null;
+  stageEl.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; }, { passive: true });
+  stageEl.addEventListener('touchend', (e) => {
+    if (sx === null) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    if (Math.abs(dx) > 60) go(cur + (dx < 0 ? 1 : -1));
+    sx = null;
+  });
+
+  window.deck = {
+    go, next: () => go(cur + 1), prev: () => go(cur - 1), setScenario,
+    current: () => ({ index: cur, id: SLIDES[cur].id, scenario: scen[SLIDES[cur].id] }),
+    slides: () => SLIDES.map((s, i) => ({ index: i, id: s.id, chapter: s.chapter, mode: s.mode, title: s.title, scenarios: s.scenarios.map((x) => x.id) })),
+    setTheme,
+  };
+
+  if (has3D) initThree();
+  else stageEl.classList.add('flat', 'no3d');
+  $('#themeBtn').textContent = T.theme + T.themes.system;
+  const start = /^#s(\d+)$/.exec(location.hash);
+  go(start ? +start[1] - 1 : 0);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => paint3D());
+})();
+</script>
+</body>
+</html>

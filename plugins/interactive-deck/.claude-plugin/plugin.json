@@ -1,0 +1,10 @@
+{
+  "name": "interactive-deck",
+  "description": "Single-file interactive HTML decks: one conclusion per slide, a live SVG/Three.js stage driven by scenario buttons, real data only, and a Playwright screenshot check before publishing.",
+  "version": "1.0.0",
+  "author": {
+    "name": "kkeevin123456",
+    "url": "https://github.com/kkeevin123456"
+  },
+  "license": "MIT"
+}

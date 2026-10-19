@@ -57,6 +57,23 @@ It also ships a `UserPromptSubmit` hook that, on the first prompt of each sessio
 to rename the herdr tab after the real topic, and to read a handoff/plan file first when the
 prompt only points at one. Outside herdr (`$HERDR_TAB_ID` unset) the hook does nothing.
 
+### `interactive-deck`
+
+One-file interactive HTML decks. Each slide states one conclusion in its title, shows it on a
+stage (SVG flowchart, Three.js scene, or cards), and has scenario buttons that change what the
+stage highlights. The skill drives the workflow:
+
+1. gather the data (every number sourced, or marked illustrative);
+2. show a one-line-per-slide outline and wait for approval;
+3. fill the DECK regions of the engine template (`assets/deck-template.html`);
+4. run `assets/verify_deck.mjs` (light/dark × desktop/phone × every slide and scenario) and read
+   the screenshots until clean;
+5. publish as an artifact, or hand over the HTML path.
+
+Every deck exposes `window.deck.go(n)`, `setScenario(id)` and `setTheme('dark')` for scripted
+control. The 3D stage is infrastructure only (camera tweens, theme-aware labels, focus
+colouring); each deck builds its own objects — see `references/three-examples.md`.
+
 ## Requirements
 
 `feature-flow` delegates to skills from two other plugins, so install these first:
@@ -70,6 +87,11 @@ Both are available from the official Claude Code plugins marketplace.
 and `setsid`. In auto mode you may need an allow rule for the `setsid nohup …herdr-handoff-recap`
 launch.
 
+`interactive-deck` needs Node ≥ 20 and the `playwright` npm package with Chromium for
+verification (the skill installs them into a scratch directory if missing). Its tests:
+`cd plugins/interactive-deck && PLAYWRIGHT_DIR=<dir>/node_modules/playwright node --test tests/*.test.mjs`
+(`PLAYWRIGHT_DIR` is not needed when `playwright` is resolvable from that directory).
+
 `spec-style-d` has no plugin dependencies. Rendering diagrams needs Python with
 [Playwright](https://playwright.dev/python/) and Chromium (`playwright install chromium`).
 
@@ -80,6 +102,7 @@ launch.
 /plugin install feature-flow@kevin-claude-plugins
 /plugin install spec-style-d@kevin-claude-plugins
 /plugin install herdr-handoff@kevin-claude-plugins
+/plugin install interactive-deck@kevin-claude-plugins
 ```
 
 ## Usage
