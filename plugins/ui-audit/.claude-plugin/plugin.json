@@ -1,0 +1,5 @@
+{
+  "name": "ui-audit",
+  "version": "0.2.0",
+  "description": "Screenshot every screen of a web app, let a team draw boxes on UI problems, and have Claude fix or file them with before/after comparison."
+}

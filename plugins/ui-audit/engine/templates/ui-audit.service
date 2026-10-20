@@ -1,0 +1,14 @@
+[Unit]
+Description=UI Audit server
+After=network.target
+
+[Service]
+WorkingDirectory={{HOME_DIR}}
+ExecStart={{NODE}} engine/server/index.mjs
+Environment=UI_AUDIT_HOME={{HOME_DIR}}
+Environment=UI_AUDIT_PORT={{PORT}}
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

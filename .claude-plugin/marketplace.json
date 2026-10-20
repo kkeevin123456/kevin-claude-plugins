@@ -34,6 +34,13 @@
       "description": "Single-file interactive HTML decks with a live SVG/Three.js stage, an outline-first workflow, and Playwright layout verification.",
       "source": "./plugins/interactive-deck",
       "category": "documentation"
+    },
+    {
+      "name": "ui-audit",
+      "displayName": "UI Audit",
+      "description": "Screenshot annotation for web apps: capture every screen, let the team mark UI bugs on the shots, then have Claude fix them and verify with before/after captures.",
+      "source": "./plugins/ui-audit",
+      "category": "workflow"
     }
   ]
 }

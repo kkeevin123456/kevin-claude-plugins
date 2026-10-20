@@ -1,0 +1,7 @@
+{
+  "port": 8090,
+  "publicUrl": "http://myhost:8090",
+  "commitUrl": "https://example.com/org/repo/-/commit/{sha}",
+  "tracker": { "type": "none" },
+  "repos": {}
+}
