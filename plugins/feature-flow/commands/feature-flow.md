@@ -87,10 +87,10 @@ a single message so they run concurrently.
    user only when it is ready or a comment needs their decision.
 
 ## Ground rules
-- **Do not auto-commit or push.** Make edits and verify, then stop for the user to
-  stage/commit — unless the change was pre-agreed. Never push unless asked.
-- Keep the user in the loop between phases; each step's skill has its own approval
-  gates — honor them.
+- Follow the user's CLAUDE.md for commit/push permissions. If it says nothing,
+  do not commit or push unless the change was pre-agreed.
+- Approval gates are for decisions (design, the Step 3 decision gate, merging),
+  not for routine steps the user has pre-authorized.
 
 ## Dependencies
 This command orchestrates skills from two other plugins, which must be installed:
