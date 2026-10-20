@@ -38,9 +38,29 @@ obvious, ask the user.
 
 Both are `disable-model-invocation` skills, so invoke them explicitly here.
 
+When a skill in Steps 1–2 would ask for approval section by section, present the
+whole design in one message and ask for a single approval instead.
+
 ### Step 3 — Plan
 Invoke **`superpowers:writing-plans`** to turn the settled spec/decisions into a
 step-by-step, executable implementation plan.
+
+**Decision gate (before asking for plan approval).** Output these three sections
+and wait for the user's answer on section 2 before any implementation:
+1. **Existing mechanisms to reuse** — how the codebase already solves the nearest
+   equivalent problem, with `file:line`. Build something new only if nothing fits,
+   and say why the existing path does not.
+2. **Decisions that need sign-off** (at most 5) — each with options, your
+   recommendation, and the evidence (repo convention, spec, prior MR). Always list
+   cross-service transport, which layer owns the data, migrations, and where docs
+   live; do not settle these silently.
+3. **Out of scope** — what this change will not touch.
+
+The user may take section 2 to their lead or reviewer; the plan is not approved
+until they answer it.
+
+Also write the **acceptance checks** into the plan: the exact commands or
+browser steps that prove each requirement, run by the agent, not the user.
 
 ### Step 4 — Execute in parallel
 Invoke **`superpowers:subagent-driven-development`** (or
@@ -56,6 +76,15 @@ a single message so they run concurrently.
 2. Invoke **`superpowers:verification-before-completion`** — run the real
    build/lint/test/e2e commands and confirm the output **before** claiming the work
    is done. Execution alone is not "done".
+3. Run the plan's acceptance checks yourself. For UI changes, drive the real UI
+   (e.g. Playwright) and capture screenshots; hand a step to the user only when it
+   needs physical access or an environment you cannot reach, and say which.
+4. For a merge/pull request, "done" means CI green **and** mergeable **and** every
+   review thread answered by a commit or reply. Do not skip hooks
+   (`--no-verify`, `SKIP=`); if forced to, say so in the first line of the report.
+5. After sending for review, watch the request yourself (e.g. with `Monitor` and a
+   polling script) and address bot/reviewer comments as they arrive; notify the
+   user only when it is ready or a comment needs their decision.
 
 ## Ground rules
 - **Do not auto-commit or push.** Make edits and verify, then stop for the user to
