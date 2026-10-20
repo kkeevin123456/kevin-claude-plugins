@@ -1,0 +1,64 @@
+# feature-flow: recommended CLAUDE.md rules
+#
+# Copy the sections you want into ~/.claude/CLAUDE.md (applies to every project)
+# or into a project's CLAUDE.md (applies to that repo only), then replace every
+# <placeholder>. Delete what does not fit your team.
+#
+# Without these rules feature-flow stays conservative: it asks before committing
+# or pushing, and it hands UI checks and review follow-ups back to you.
+
+## 1. Decision gate before plan approval
+Before asking me to approve a spec or plan, output these three sections and wait
+for my answer on section 2 before writing code:
+1. **Existing mechanisms to reuse**: how this repo already solves the nearest
+   equivalent problem (with file:line). Build something new only if nothing fits,
+   and say why.
+2. **Decisions that need sign-off** (at most 5): options, your recommendation, and
+   the evidence (repo convention, spec, prior MR/PR). Always list: cross-service
+   transport, which layer owns the data, migrations, where docs live.
+3. **Out of scope**.
+
+## 2. Definition of done
+- Report "done" only with evidence: real build/lint/test output; new tests fail
+  when the fix is removed.
+- UI changes: drive the UI yourself with Playwright on <test environment, e.g.
+  staging URL or test device> and capture screenshots. Do not hand me a list of
+  manual test steps unless the step needs physical access or an environment you
+  cannot reach; say which.
+- MR/PR done = CI green + mergeable + every review thread answered by a commit
+  or reply.
+- Never skip hooks (--no-verify, SKIP=, core.hooksPath=/dev/null). If forced to,
+  say which hook and why in the first line of the report.
+- Design against the latest origin/<base branch>, not a possibly stale local
+  checkout.
+
+## 3. Watch reviews yourself
+After sending an MR/PR for review, watch it with Monitor and a polling command:
+    <your watcher, e.g. a script that polls the MR/PR API every 2 minutes and
+     prints one line per new comment / pipeline change / mergeable state>
+- New comment from <review bot or reviewer>: fix, reply on the thread (do not
+  resolve it), hand it back for review, keep watching.
+- Merge conflict / needs rebase: rebase yourself.
+- Ready (CI green, mergeable, no open threads): only then notify me.
+- Stop and ask only when a comment changes the architecture.
+
+## 4. Pre-authorized actions (do these without asking)
+On feature branches and test environments:
+- commit, push, rebase, open a draft MR/PR, update its description
+- reply to review threads, hand the MR/PR back to the reviewer
+- deploy to <test environment> (back up first)
+- run build/test/lint, retry flaky CI jobs
+- <personal repos where pushing straight to main is fine>
+
+Always ask first:
+- the decision gate (section 1)
+- changes to main/base branches, merging, deleting others' branches/worktrees
+- changes to public API / protocol definitions, dropping databases
+- anything that affects environments other than <test environment>
+
+## 5. Approval granularity
+- Present brainstorming/spec/design as one complete version for one approval,
+  not section by section.
+- Do not end replies with "shall I ...?" for actions pre-authorized in section 4.
+- Before long or overnight runs, list the commands that might stop on a
+  permission prompt so I can allowlist them once.

@@ -1,6 +1,6 @@
 {
   "name": "feature-flow",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Opinionated feature-development pipeline for Claude Code: brainstorm -> size-branch (wayfinder / grill-with-docs) -> writing-plans -> parallel subagents -> code review + verification.",
   "author": {
     "name": "kkeevin123456",

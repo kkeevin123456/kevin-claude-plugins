@@ -22,6 +22,13 @@ disciplined funnel from idea to reviewed, verified code:
 `feature-flow` is a thin **orchestrator**: it drives real skills rather than
 reimplementing them.
 
+**Recommended setup.** feature-flow works best when your CLAUDE.md tells it what
+it may do without asking (commit, push, deploy to a test environment), what
+"done" means, and how to watch reviews. Copy the parts you want from
+[`plugins/feature-flow/CLAUDE.md.example`](plugins/feature-flow/CLAUDE.md.example)
+into `~/.claude/CLAUDE.md` or your project's CLAUDE.md. Without it, feature-flow
+asks before committing or pushing.
+
 ### `spec-style-d`
 
 A house style for feature specs. One canonical **fact set** (`F1…FN`, plus a "what if" Q&A

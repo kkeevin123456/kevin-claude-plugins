@@ -86,6 +86,16 @@ a single message so they run concurrently.
    polling script) and address bot/reviewer comments as they arrive; notify the
    user only when it is ready or a comment needs their decision.
 
+## First run: recommended CLAUDE.md rules
+Several steps above depend on rules the user sets in CLAUDE.md (what may be
+committed or pushed without asking, which test environment to verify on, how to
+watch reviews). Before Step 1, check the CLAUDE.md files loaded in this session.
+If none of them covers commit/push permissions or a definition of done, tell the
+user once, in one line, that a template is available at
+https://github.com/kkeevin123456/kevin-claude-plugins/blob/main/plugins/feature-flow/CLAUDE.md.example
+and continue with the conservative defaults below. Do not edit CLAUDE.md
+yourself.
+
 ## Ground rules
 - Follow the user's CLAUDE.md for commit/push permissions. If it says nothing,
   do not commit or push unless the change was pre-agreed.
