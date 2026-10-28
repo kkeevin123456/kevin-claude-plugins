@@ -17,7 +17,11 @@ disciplined funnel from idea to reviewed, verified code:
 4. **Execute in parallel** — `superpowers:subagent-driven-development`
    (one lane per repo, model-tiered)
 5. **Review + verify** — `superpowers:requesting-code-review` →
-   `superpowers:verification-before-completion`
+   `superpowers:verification-before-completion` → independent verifier subagent
+   (`PASS` / `PASS+NOTES` / `FAIL` against the plan's Done/Keep checks)
+
+Steps are copied verbatim into the todo list; a skipped step stays visible as
+`skip: <reason>`.
 
 `feature-flow` is a thin **orchestrator**: it drives real skills rather than
 reimplementing them.

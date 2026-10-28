@@ -20,6 +20,22 @@ Work the steps **in order**. Announce each step as you enter it
 approach; follow that skill exactly. Do not skip ahead, and do not start writing
 implementation code until Step 3's plan exists.
 
+**Open with the goal.** Your first message restates, in your own words, the
+user's goal, the problem it solves, and the smallest change you expect to meet
+it. Do not wait for confirmation. If the evidence rules out the requested change,
+show the evidence and stop. Restate the goal in every subagent brief and at the
+top of the final report.
+
+**Steps go into the todo list verbatim.** Before Step 1, create one todo per
+step and sub-step of this pipeline (Steps 1–5, including each numbered item of
+Step 5), copied as written, before any task-specific todos. A step you decide
+not to do stays in the list, marked `skip: <one-line reason>`. Never delete a
+step from the list.
+
+**Label every claim.** Each claim in a report carries its evidence or its label
+in the same sentence: *measured* (you ran it and saw the output), *inferred*
+(from reading code), or *guess*. Never hand the user a check you could run.
+
 ### Step 1 — Diverge
 Invoke **`superpowers:brainstorming`** to explore intent, requirements, and design.
 Do this before any code or file exploration.
@@ -59,8 +75,26 @@ and wait for the user's answer on section 2 before any implementation:
 The user may take section 2 to their lead or reviewer; the plan is not approved
 until they answer it.
 
-Also write the **acceptance checks** into the plan: the exact commands or
-browser steps that prove each requirement, run by the agent, not the user.
+Also write the **acceptance checks** into the plan, run by the agent, not the
+user, in this form:
+- **Done means** — one checkable condition per requirement, each with the exact
+  command or browser steps that prove it and the output that counts as a pass.
+  "It compiles", "tests pass" or "looks right" are not conditions.
+- **Keep** — existing behaviour that must not change, each with the check that
+  proves it still holds.
+
+A check that cannot run, ends *inconclusive*, or runs on a different surface
+than the user's (unit test instead of the real UI, mock instead of the real
+backend) is not a pass. Report it as such.
+
+For every test the plan adds, answer two questions in the plan:
+1. Would it fail if the behaviour broke (wrong value, missing side effect,
+   duplicated call)? If not, it proves nothing — rewrite it.
+2. Would it still pass if only internals changed and observable behaviour did
+   not? If not, it is coupled to the implementation — rewrite it.
+
+Expected values must not be computed by the code under test or copied from its
+output.
 
 ### Step 4 — Execute in parallel
 Invoke **`superpowers:subagent-driven-development`** (or
@@ -79,12 +113,30 @@ a single message so they run concurrently.
 3. Run the plan's acceptance checks yourself. For UI changes, drive the real UI
    (e.g. Playwright) and capture screenshots; hand a step to the user only when it
    needs physical access or an environment you cannot reach, and say which.
-4. For a merge/pull request, "done" means CI green **and** mergeable **and** every
+4. **Independent verification.** Spawn a fresh subagent that did not write the
+   code (the author checks what it meant to build, not what it built). Give it
+   the goal, the plan's Done/Keep checks and access to the environment, not the
+   implementers' reports. It runs every check itself and returns `PASS`,
+   `PASS+NOTES` or `FAIL`, with the raw output for each check. Only `PASS` or
+   `PASS+NOTES` may go out for review. Green CI or an approving bot review is
+   not a verdict. If the code changes after the verdict (fix round, rebase
+   that changes the patch — compare `git patch-id`), get a new verdict.
+5. For a merge/pull request, "done" means CI green **and** mergeable **and** every
    review thread answered by a commit or reply. Do not skip hooks
    (`--no-verify`, `SKIP=`); if forced to, say so in the first line of the report.
-5. After sending for review, watch the request yourself (e.g. with `Monitor` and a
+6. After sending for review, watch the request yourself (e.g. with `Monitor` and a
    polling script) and address bot/reviewer comments as they arrive; notify the
    user only when it is ready or a comment needs their decision.
+7. **Classify a CI failure before retrying it.**
+   - Failure in code the diff never touches → check for a stale base first
+     (`git merge-base --is-ancestor origin/<base> HEAD`). If stale, rebase; do not
+     retry.
+   - Looks like flake or infrastructure → retry **once**. An identical second
+     failure means it is not flake: read the job log and treat it as real.
+   - Failure in the diff's own code → fix it with a commit.
+
+   Never retry blind more than once, and never push an unrelated change just to
+   re-trigger CI.
 
 ## First run: recommended CLAUDE.md rules
 Several steps above depend on rules the user sets in CLAUDE.md (what may be
