@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # herdr-tab-autotitle (UserPromptSubmit hook)
 #
-# On the FIRST user message of a session, inject a one-time instruction asking the
-# model to rename the current herdr tab after the conversation topic. Because
-# /clear mints a fresh session_id (and so does a brand-new session), a per-session
-# marker naturally re-arms on both events.
-#
-# The model — not this script — chooses the label (best-quality titles, zero LLM
-# latency here). This script only decides WHEN to fire and injects the command.
+# On the FIRST user message of a session, title the current herdr tab in two stages:
+#   1. right away, from the first line of the prompt (no model involved), and
+#   2. inject a one-time instruction asking the model to replace that with a
+#      concise label for the real topic.
+# Stage 1 keeps the tab named when the injected text does not reach the model.
+# /clear mints a fresh session_id (and so does a brand-new session), so a
+# per-session marker naturally re-arms on both events.
 #
 # Contract: exit 0 with stdout -> stdout is added to the model's context.
 #           exit 0 with empty stdout -> nothing injected.
@@ -33,6 +33,38 @@ fi
 : > "$marker"   # arm-once for this session_id
 
 herdr_bin="$(command -v herdr 2>/dev/null || echo "$HOME/.local/bin/herdr")"
+
+# Stage 1: a provisional title from the prompt itself, set here without the model,
+# so the tab is still named if the injected instruction below never reaches it.
+# Slash commands and paste-only prompts produce no title and keep the old label.
+provisional="$(printf '%s' "$input" | python3 -I -c '
+import json, re, sys, unicodedata
+try:
+    p = json.load(sys.stdin).get("prompt") or ""
+except Exception:
+    sys.exit(0)
+p = re.sub(r"<pasted_content[^>]*>.*?</pasted_content[^>]*>", " ", p, flags=re.S)
+p = re.sub(r"\[Pasted text #\d+[^\]]*\]", " ", p)
+p = re.sub(r"<[^>]+>", " ", p)
+line = next((l.strip() for l in p.splitlines() if l.strip()), "")
+if not line or line.startswith("/"):
+    sys.exit(0)
+line = re.sub(r"\s+", " ", line)
+out, width, cut = "", 0, False
+for ch in line:
+    w = 2 if unicodedata.east_asian_width(ch) in "WF" else 1
+    if width + w > 28:
+        cut = True
+        break
+    out += ch
+    width += w
+print(out.rstrip() + ("…" if cut else ""))
+' 2>/dev/null)"
+if [ -n "$provisional" ]; then
+  timeout 3 "$herdr_bin" tab rename "$HERDR_TAB_ID" "$provisional" >/dev/null 2>&1 || true
+fi
+
+# Stage 2: ask the model to replace the provisional title with a topic label.
 
 cat <<EOF
 [herdr-tab-autotitle] This is the first message of a new herdr session. Silently run
